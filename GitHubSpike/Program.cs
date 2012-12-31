@@ -84,27 +84,28 @@ namespace GitHubSpike
         public void PleaseWork()
         {
             // this is the name of the main head we're dealing with.
-            const string mainBranch = "heads/master";
+            const string mainBranch = "master";
+            const string mainHead = "heads/" + mainBranch;
 
             // first, get the reference to the master by its name.
-            var getMasterRefRequest = CreateRequest("refs", Method.GET, "/{ref}", null);
-            getMasterRefRequest.AddUrlSegment("ref", mainBranch);
+            var getMasterRefRequest = CreateGitRequest("refs", Method.GET, "/{ref}", null);
+            getMasterRefRequest.AddUrlSegment("ref", mainHead);
             var getMasterRefResponse = _restClient.Execute<GitRef>(getMasterRefRequest);
 
             // using the reference to the master, get the commit that that head is pointing to.
-            var getMasterCommitRequest = CreateRequest("commits", Method.GET, "/{sha}", null);
+            var getMasterCommitRequest = CreateGitRequest("commits", Method.GET, "/{sha}", null);
             getMasterCommitRequest.AddUrlSegment("sha", getMasterRefResponse.Data.@object.sha);
             var getMasterCommitResponse = _restClient.Execute<Commit>(getMasterCommitRequest);
 
             // using the commit that the head is pointing to, get the tree that we will be updating.
-            var getMasterTreeRequest = CreateRequest("trees", Method.GET, "/{sha}", null);
+            var getMasterTreeRequest = CreateGitRequest("trees", Method.GET, "/{sha}", null);
             getMasterTreeRequest.AddUrlSegment("sha", getMasterCommitResponse.Data.tree.sha);
             var getMasterTreeResponse = _restClient.Execute<GitTree>(getMasterTreeRequest);
 
             // we create a new tree based on the tree specified in base_tree.
             // the tree object contains the modifications to make to that tree.
             // changes to files are specified in the "content" field.
-            var createTreeRequest = CreateRequest("trees", Method.POST, new
+            var createTreeRequest = CreateGitRequest("trees", Method.POST, new
             {
                 base_tree = getMasterTreeResponse.Data.sha,
                 tree = new object[] {
@@ -123,7 +124,7 @@ namespace GitHubSpike
             RestResponse<GitTree> createTreeResponse = _restClient.Execute<GitTree>(createTreeRequest);
 
             // create a new commit pointing to the tree we've just created.
-            var addCommitRequest = CreateRequest("commits", Method.POST, new
+            var addCommitRequest = CreateGitRequest("commits", Method.POST, new
             {
                 message = "This is a test commit.",
                 author = new
@@ -138,31 +139,52 @@ namespace GitHubSpike
             RestResponse<Commit> addCommitResponse = _restClient.Execute<Commit>(addCommitRequest);
 
             // point the head to the commit we just made.
-            var repointHeadRequest = CreateRequest("refs", Method.PATCH, "/{ref}", new
-            {
-                sha = addCommitResponse.Data.sha
-            });
-            repointHeadRequest.AddUrlSegment("ref", mainBranch);
-            var repointHeadResponse = _restClient.Execute(repointHeadRequest);
+            //var repointHeadRequest = CreateRequest("refs", Method.PATCH, "/{ref}", new
+            //{
+            //    sha = addCommitResponse.Data.sha
+            //});
+            //repointHeadRequest.AddUrlSegment("ref", mainBranch);
+            //var repointHeadResponse = _restClient.Execute(repointHeadRequest);
+
+            // merge our commit back into master
+            var mergeRequest = CreateMergeRequest(mainBranch, addCommitResponse.Data.sha, "Merged changes into master");
+            var mergeResponse = _restClient.Execute(mergeRequest);
         }
 
-        private RestRequest CreateRequest(string resource, Method method, object body)
+        private RestRequest CreateMergeRequest(string destination, string source, string commitMessage)
         {
-            return CreateRequest(resource, method, "", body);
+            var request = new RestRequest("/repos/{owner}/{repository}/merges", Method.POST);
+            SetStandardParameters(request);
+            request.AddBody(new {
+                @base = destination,
+                head = source,
+                commit_message = commitMessage
+            });
+            return request;
         }
 
-        private RestRequest CreateRequest(string resource, Method method, string path, object body)
+        private RestRequest CreateGitRequest(string resource, Method method, object body)
+        {
+            return CreateGitRequest(resource, method, "", body);
+        }
+
+        private RestRequest CreateGitRequest(string resource, Method method, string path, object body)
         {
             var request = new RestRequest("/repos/{owner}/{repository}/git/{resource}" + path, method);
-            request.RequestFormat = DataFormat.Json;
-            request.AddUrlSegment("owner", _userName);
-            request.AddUrlSegment("repository", _repositoryName);
+            SetStandardParameters(request);
             request.AddUrlSegment("resource", resource);
             if (body != null)
             {
                 request.AddBody(body);
             }
             return request;
+        }
+  
+        private void SetStandardParameters(RestRequest request)
+        {
+            request.RequestFormat = DataFormat.Json;
+            request.AddUrlSegment("owner", _userName);
+            request.AddUrlSegment("repository", _repositoryName);
         }
     }
 
