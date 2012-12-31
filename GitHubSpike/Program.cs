@@ -97,13 +97,6 @@ namespace GitHubSpike
             getMasterTreeRequest.AddUrlSegment("sha", getMasterCommitResponse.Data.tree.sha);
             var getMasterTreeResponse = _restClient.Execute<GitTree>(getMasterTreeRequest);
 
-            var createBlobRequest = CreateRequest("blobs", Method.POST, new
-            {
-                content = "Hate hate hate hate hate hate hate hate " + DateTime.Now,
-                encoding = "utf-8"
-            });
-            RestResponse<GitObject> addBlobResponse = _restClient.Execute<GitObject>(createBlobRequest);
-
             var addBlobToTreeRequest = CreateRequest("trees", Method.POST, new
             {
                 base_tree = getMasterTreeResponse.Data.sha,
@@ -112,7 +105,7 @@ namespace GitHubSpike
                         path = DateTime.Now.Ticks + ".txt",
                         mode = "100644",
                         type = "blob",
-                        sha = addBlobResponse.Data.sha
+                        content = "blob content"
                     }
                 }
             });
