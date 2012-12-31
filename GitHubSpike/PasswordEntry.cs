@@ -5,10 +5,10 @@ namespace GitHubSpike
     // http://bytes.com/topic/c-sharp/answers/569205-how-show-star-when-entering-characters-console-application
     public class PasswordEntry
     {
-        [System.Runtime.InteropServices.DllImport("kernel32 ")]
+        [System.Runtime.InteropServices.DllImport("kernel32")]
         private static extern int SetConsoleMode(IntPtr hConsoleHandle, int dwMode);
 
-        [System.Runtime.InteropServices.DllImport("kernel32 ")]
+        [System.Runtime.InteropServices.DllImport("kernel32")]
         private static extern int GetConsoleMode(IntPtr hConsoleHandle, ref int dwMode);
 
         private const int ENABLE_ECHO_INPUT = 4;
@@ -27,6 +27,7 @@ namespace GitHubSpike
             string password = Console.ReadLine();
 
             SetConsoleMode(hStdIn, mode | ENABLE_ECHO_INPUT);
+            Console.WriteLine();
             return password;
         }
     }
