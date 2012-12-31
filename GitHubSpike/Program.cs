@@ -83,21 +83,28 @@ namespace GitHubSpike
 
         public void PleaseWork()
         {
+            // this is the name of the main head we're dealing with.
             const string mainBranch = "heads/master";
 
+            // first, get the reference to the master by its name.
             var getMasterRefRequest = CreateRequest("refs", Method.GET, "/{ref}", null);
             getMasterRefRequest.AddUrlSegment("ref", mainBranch);
             var getMasterRefResponse = _restClient.Execute<GitRef>(getMasterRefRequest);
 
+            // using the reference to the master, get the commit that that head is pointing to.
             var getMasterCommitRequest = CreateRequest("commits", Method.GET, "/{sha}", null);
             getMasterCommitRequest.AddUrlSegment("sha", getMasterRefResponse.Data.@object.sha);
             var getMasterCommitResponse = _restClient.Execute<Commit>(getMasterCommitRequest);
 
+            // using the commit that the head is pointing to, get the tree that we will be updating.
             var getMasterTreeRequest = CreateRequest("trees", Method.GET, "/{sha}", null);
             getMasterTreeRequest.AddUrlSegment("sha", getMasterCommitResponse.Data.tree.sha);
             var getMasterTreeResponse = _restClient.Execute<GitTree>(getMasterTreeRequest);
 
-            var addBlobToTreeRequest = CreateRequest("trees", Method.POST, new
+            // we create a new tree based on the tree specified in base_tree.
+            // the tree object contains the modifications to make to that tree.
+            // changes to files are specified in the "content" field.
+            var createTreeRequest = CreateRequest("trees", Method.POST, new
             {
                 base_tree = getMasterTreeResponse.Data.sha,
                 tree = new object[] {
@@ -108,13 +115,14 @@ namespace GitHubSpike
                         content = "blob content"
                     },
                     new {
-                        path = "king of lies.txt",
-                        content = "I'm in your repository, updating your files!"
+                        path = "nested/file.txt",
+                        content = "I'VE EATEN IT"
                     }
                 }
             });
-            RestResponse<GitTree> addBlobToTreeResponse = _restClient.Execute<GitTree>(addBlobToTreeRequest);
+            RestResponse<GitTree> createTreeResponse = _restClient.Execute<GitTree>(createTreeRequest);
 
+            // create a new commit pointing to the tree we've just created.
             var addCommitRequest = CreateRequest("commits", Method.POST, new
             {
                 message = "This is a test commit.",
@@ -125,10 +133,11 @@ namespace GitHubSpike
                     date = DateTime.UtcNow
                 },
                 parents = new string[] { getMasterRefResponse.Data.@object.sha },
-                tree = addBlobToTreeResponse.Data.sha
+                tree = createTreeResponse.Data.sha
             });
             RestResponse<Commit> addCommitResponse = _restClient.Execute<Commit>(addCommitRequest);
 
+            // point the head to the commit we just made.
             var repointHeadRequest = CreateRequest("refs", Method.PATCH, "/{ref}", new
             {
                 sha = addCommitResponse.Data.sha
