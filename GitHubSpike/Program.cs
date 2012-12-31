@@ -100,12 +100,16 @@ namespace GitHubSpike
             var addBlobToTreeRequest = CreateRequest("trees", Method.POST, new
             {
                 base_tree = getMasterTreeResponse.Data.sha,
-                tree = new[] {
+                tree = new object[] {
                     new {
                         path = DateTime.Now.Ticks + ".txt",
                         mode = "100644",
                         type = "blob",
                         content = "blob content"
+                    },
+                    new {
+                        path = "king of lies.txt",
+                        content = "I'm in your repository, updating your files!"
                     }
                 }
             });
@@ -113,11 +117,11 @@ namespace GitHubSpike
 
             var addCommitRequest = CreateRequest("commits", Method.POST, new
             {
-                message = "In his home in Rl'yeh, dead Cthulhu waits, dreaming",
+                message = "This is a test commit.",
                 author = new
                 {
-                    name = "Ruby-Eyes Shabranigdu",
-                    email = "ruby-eyes@monsters.org",
+                    name = "Bert",
+                    email = "bop-bag@example.com",
                     date = DateTime.UtcNow
                 },
                 parents = new string[] { getMasterRefResponse.Data.@object.sha },
