@@ -5,7 +5,7 @@ using RestSharp;
 
 namespace GitHubSpike
 {
-    public class GitHubCommitter : IDisposable
+    public class GitHubCommitter
     {
         private readonly GitHubWrapper _wrapper;
         private readonly GitTree _masterTree;
@@ -23,11 +23,13 @@ namespace GitHubSpike
 
         public void CreateFile(string path, string content)
         {
+            UsedGuard();
             _pendingChanges.Add(new { path, content, mode = "100644", type = "blob" });
         }
 
         public void UpdateFile(string path, string content)
         {
+            UsedGuard();
             _pendingChanges.Add(new {path, content });
         }
 
@@ -38,10 +40,7 @@ namespace GitHubSpike
 
         public GitCommit Commit(string name, string email, string message, DateTime date)
         {
-            if (_used)
-            {
-                throw new InvalidOperationException("Commit has already been submitted.");
-            }
+            UsedGuard();
 
             // we create a new tree based on the tree specified in base_tree.
             // the tree object contains the modifications to make to that tree.
@@ -67,9 +66,12 @@ namespace GitHubSpike
             return addCommitResponse.Data;
         }
 
-        public void Dispose()
+        private void UsedGuard()
         {
-            _used = true;
+            if (_used)
+            {
+                throw new InvalidOperationException("Commit has already been submitted.");
+            }
         }
     }
 }
