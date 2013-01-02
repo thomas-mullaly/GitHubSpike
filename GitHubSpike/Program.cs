@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using NGitHub;
 using RestSharp;
 
 namespace GitHubSpike
@@ -58,30 +57,43 @@ namespace GitHubSpike
 
     public class Committer
     {
-        private readonly string _userName;
+        private readonly string _ownerName;
         private readonly string _repositoryName;
 
         private readonly RestClient _restClient;
-        private readonly GitHubClient _githubClient;
 
-        public Committer(string userName, string password, string repositoryName)
+        private readonly IList<object> _pendingCommits;
+
+        public Committer(string userName, string password, string ownerName, string repositoryName)
         {
             _repositoryName = repositoryName;
-            _userName = userName;
+            _ownerName = ownerName;
 
-            _restClient = new RestClient()
+            _restClient = new RestClient
             {
                 BaseUrl = "https://api.github.com/",
                 Authenticator = new HttpBasicAuthenticator(userName, password),
             };
 
-            _githubClient = new GitHubClient()
-            {
-                Authenticator = new HttpBasicAuthenticator(userName, password)
-            };
+            _pendingCommits = new List<object>();
         }
 
-        public void PleaseWork()
+        public void CreateFile(string path, string content)
+        {
+            _pendingCommits.Add(new { path, content, mode = "100644", type = "blob" });
+        }
+
+        public void UpdateFile(string path, string content)
+        {
+            _pendingCommits.Add(new {path, content });
+        }
+
+        public void SubmitCommit(string name, string email, string message)
+        {
+            SubmitCommit(name, email, message, DateTime.UtcNow);
+        }
+
+        public void SubmitCommit(string name, string email, string message, DateTime date)
         {
             // this is the name of the main head we're dealing with.
             const string mainBranch = "master";
@@ -108,32 +120,16 @@ namespace GitHubSpike
             var createTreeRequest = CreateGitRequest("trees", Method.POST, new
             {
                 base_tree = getMasterTreeResponse.Data.sha,
-                tree = new object[] {
-                    new {
-                        path = DateTime.Now.Ticks + ".txt",
-                        mode = "100644",
-                        type = "blob",
-                        content = "blob content"
-                    },
-                    new {
-                        path = "nested/file.txt",
-                        content = "I'VE EATEN IT"
-                    }
-                }
+                tree = _pendingCommits
             });
             RestResponse<GitTree> createTreeResponse = _restClient.Execute<GitTree>(createTreeRequest);
 
             // create a new commit pointing to the tree we've just created.
             var addCommitRequest = CreateGitRequest("commits", Method.POST, new
             {
-                message = "This is a test commit.",
-                author = new
-                {
-                    name = "Bert",
-                    email = "bop-bag@example.com",
-                    date = DateTime.UtcNow
-                },
-                parents = new string[] { getMasterRefResponse.Data.@object.sha },
+                message = message,
+                author = new { name, email, date },
+                parents = new[] { getMasterRefResponse.Data.@object.sha },
                 tree = createTreeResponse.Data.sha
             });
             RestResponse<Commit> addCommitResponse = _restClient.Execute<Commit>(addCommitRequest);
@@ -149,6 +145,8 @@ namespace GitHubSpike
             // merge our commit back into master
             var mergeRequest = CreateMergeRequest(mainBranch, addCommitResponse.Data.sha, "Merged changes into master");
             var mergeResponse = _restClient.Execute(mergeRequest);
+
+            _pendingCommits.Clear();
         }
 
         private RestRequest CreateMergeRequest(string destination, string source, string commitMessage)
@@ -183,26 +181,29 @@ namespace GitHubSpike
         private void SetStandardParameters(RestRequest request)
         {
             request.RequestFormat = DataFormat.Json;
-            request.AddUrlSegment("owner", _userName);
+            request.AddUrlSegment("owner", _ownerName);
             request.AddUrlSegment("repository", _repositoryName);
         }
     }
 
     class Program
     {
-        private static readonly PasswordEntry passwordEntry = new PasswordEntry();
+        private static readonly PasswordEntry PasswordEntry = new PasswordEntry();
 
         static void Main(string[] args)
         {
+            const string ownerName = "cawagner";
             const string repositoryName = "testing-github-api";
             
             Console.Write("User name: ");
             string userName = Console.ReadLine();
             Console.Write("Password: ");
-            string password = passwordEntry.ReadPassword();
+            string password = PasswordEntry.ReadPassword();
 
-            var committer = new Committer(userName, password, repositoryName);
-            committer.PleaseWork();
+            var committer = new Committer(userName, password, ownerName, repositoryName);
+            committer.CreateFile(DateTime.Now + ".txt", "this is a test file");
+            committer.UpdateFile("nested/file.txt", "I've eaten it!");
+            committer.SubmitCommit("Bert", "bert@bop-bag.org", "This is a test commit.");
 
             Console.WriteLine("Press enter to stop the world");
             Console.ReadLine();
