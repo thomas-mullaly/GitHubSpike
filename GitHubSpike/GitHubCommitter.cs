@@ -33,12 +33,12 @@ namespace GitHubSpike
             _pendingChanges.Add(new {path, content });
         }
 
-        public GitCommit Commit(string name, string email, string message)
+        public GitCommit SubmitCommit(string name, string email, string message)
         {
-            return Commit(name, email, message, DateTime.UtcNow);
+            return SubmitCommit(name, email, message, DateTime.UtcNow);
         }
 
-        public GitCommit Commit(string name, string email, string message, DateTime date)
+        public GitCommit SubmitCommit(string name, string email, string message, DateTime date)
         {
             UsedGuard();
 

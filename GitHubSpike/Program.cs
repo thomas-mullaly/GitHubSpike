@@ -20,10 +20,10 @@ namespace GitHubSpike
             var gitRequestBuilder = new GitHubRequestBuilder(ownerName, repositoryName);
             var gitHub = new GitHubWrapper(userName, password, "master", gitRequestBuilder);
 
-            GitHubCommitter committer = gitHub.CreateCommit();
+            GitHubCommitter committer = gitHub.CreateCommitter();
             committer.CreateFile(DateTime.Now + ".txt", "this is a test file");
             committer.UpdateFile("nested/file.txt", "I've eaten it!");
-            GitCommit commit = committer.Commit("Bert", "bert@bop-bag.org", "This is a test commit.");
+            GitCommit commit = committer.SubmitCommit("Bert", "bert@bop-bag.org", "This is a test commit.");
             gitHub.MergeIn(commit, "Merged it in");
 
             Console.WriteLine("Press enter to stop the world");

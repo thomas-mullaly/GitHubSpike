@@ -22,7 +22,7 @@ namespace GitHubSpike
             };
         }
 
-        public GitHubCommitter CreateCommit()
+        public GitHubCommitter CreateCommitter()
         {
             // this is the name of the main head we're dealing with.
             string mainHead = "heads/" + BranchName;
