@@ -50,6 +50,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DTO\GitCommit.cs" />
+    <Compile Include="DTO\GitAuthor.cs" />
+    <Compile Include="DTO\GitObject.cs" />
+    <Compile Include="DTO\GitFile.cs" />
+    <Compile Include="DTO\GitRef.cs" />
+    <Compile Include="DTO\GitTree.cs" />
+    <Compile Include="DTO\GitObjectInfo.cs" />
+    <Compile Include="GitHubCommitter.cs" />
+    <Compile Include="GitHubRequestBuilder.cs" />
+    <Compile Include="GitHubWrapper.cs" />
     <Compile Include="PasswordEntry.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
