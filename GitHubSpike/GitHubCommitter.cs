@@ -50,7 +50,7 @@ namespace GitHubSpike
                     base_tree = _masterTree.sha,
                     tree = _pendingChanges
                 });
-            RestResponse<GitTree> createTreeResponse = _wrapper.RestClient.Execute<GitTree>(createTreeRequest);
+            var createTreeResponse = _wrapper.CreateTree(createTreeRequest);
 
             // create a new commit pointing to the tree we've just created.
             var addCommitRequest = _wrapper.HubRequestBuilder.CreateRequest("commits", Method.POST, new
@@ -60,7 +60,7 @@ namespace GitHubSpike
                 parents = new[] { _masterRef.@object.sha },
                 tree = createTreeResponse.Data.sha
             });
-            RestResponse<GitCommit> addCommitResponse = _wrapper.RestClient.Execute<GitCommit>(addCommitRequest);
+            var addCommitResponse = _wrapper.AddCommit(addCommitRequest);
 
             _used = true;
             return addCommitResponse.Data;

@@ -24,6 +24,7 @@ namespace GitHubSpike
             committer.CreateFile(DateTime.Now + ".txt", "this is a test file");
             committer.UpdateFile("nested/file.txt", "I've eaten it!");
             GitCommit commit = committer.SubmitCommit("Bert", "bert@bop-bag.org", "This is a test commit.");
+            
             gitHub.MergeIn(commit, "Merged it in");
 
             Console.WriteLine("Press enter to stop the world");
